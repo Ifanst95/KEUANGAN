@@ -1,0 +1,6 @@
+{
+  "name": "DompetKu - Financial Management & Budgeting",
+  "description": "Aplikasi pengelola keuangan pribadi lengkap dengan pemasukan, pengeluaran, visualisasi grafik interaktif, analisis AI, dan ekspor laporan PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
