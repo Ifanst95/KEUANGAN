@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Catatan transaksi pemasukan atau pengeluaran pengguna",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "amount",
+        "category",
+        "date",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPreferences": {
+      "title": "UserPreferences",
+      "description": "Pengaturan judul, deskripsi, dan tema tampilan yang tersinkronisasi",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "appTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "appDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "cashflowTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "cashflowDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "expenseDistTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "expenseDistDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "recentTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "recentDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "allTrxTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light"]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "appTitle",
+        "appDescription",
+        "cashflowTitle",
+        "cashflowDescription",
+        "expenseDistTitle",
+        "expenseDistDescription",
+        "recentTitle",
+        "recentDescription",
+        "allTrxTitle",
+        "theme",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Transaksi keuangan pribadi milik pengguna yang tersinkronisasi antar perangkat"
+    },
+    "/users/{userId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/UserPreferences" },
+      "description": "Preferensi tampilan serta judul dan deskripsi yang tersinkronisasi antar perangkat"
+    }
+  }
+}

@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidTransaction(data, userId, transactionId) {
+      return data.keys().hasAll([
+        'id',
+        'userId',
+        'type',
+        'amount',
+        'category',
+        'date',
+        'description',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id',
+        'userId',
+        'type',
+        'amount',
+        'category',
+        'date',
+        'description',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.id is string
+      && data.id == transactionId
+      && isValidId(data.id)
+      && data.userId is string
+      && data.userId == userId
+      && isValidId(data.userId)
+      && data.type in ['income', 'expense']
+      && data.amount is number
+      && data.amount > 0
+      && data.amount <= 1000000000000
+      && data.category is string
+      && data.category.size() >= 1
+      && data.category.size() <= 50
+      && data.date is string
+      && data.date.size() == 10
+      && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+      && data.description is string
+      && data.description.size() >= 1
+      && data.description.size() <= 200
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidPreferences(data, userId) {
+      return data.keys().hasAll([
+        'userId',
+        'appTitle',
+        'appDescription',
+        'cashflowTitle',
+        'cashflowDescription',
+        'expenseDistTitle',
+        'expenseDistDescription',
+        'recentTitle',
+        'recentDescription',
+        'allTrxTitle',
+        'theme',
+        'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'userId',
+        'appTitle',
+        'appDescription',
+        'cashflowTitle',
+        'cashflowDescription',
+        'expenseDistTitle',
+        'expenseDistDescription',
+        'recentTitle',
+        'recentDescription',
+        'allTrxTitle',
+        'theme',
+        'updatedAt'
+      ])
+      && data.userId is string
+      && data.userId == userId
+      && isValidId(data.userId)
+      && data.appTitle is string && data.appTitle.size() >= 1 && data.appTitle.size() <= 80
+      && data.appDescription is string && data.appDescription.size() >= 1 && data.appDescription.size() <= 160
+      && data.cashflowTitle is string && data.cashflowTitle.size() >= 1 && data.cashflowTitle.size() <= 80
+      && data.cashflowDescription is string && data.cashflowDescription.size() >= 1 && data.cashflowDescription.size() <= 160
+      && data.expenseDistTitle is string && data.expenseDistTitle.size() >= 1 && data.expenseDistTitle.size() <= 80
+      && data.expenseDistDescription is string && data.expenseDistDescription.size() >= 1 && data.expenseDistDescription.size() <= 160
+      && data.recentTitle is string && data.recentTitle.size() >= 1 && data.recentTitle.size() <= 80
+      && data.recentDescription is string && data.recentDescription.size() >= 1 && data.recentDescription.size() <= 160
+      && data.allTrxTitle is string && data.allTrxTitle.size() >= 1 && data.allTrxTitle.size() <= 80
+      && data.theme in ['dark', 'light']
+      && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId}/transactions/{transactionId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(transactionId);
+      allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidId(transactionId)
+        && isValidTransaction(incoming(), userId, transactionId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidId(transactionId)
+        && isValidTransaction(incoming(), userId, transactionId)
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'type',
+          'amount',
+          'category',
+          'date',
+          'description',
+          'updatedAt'
+        ]);
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(transactionId);
+    }
+
+    match /users/{userId}/settings/{settingId} {
+      allow get: if isOwner(userId) && isValidId(userId) && settingId == 'preferences';
+      allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && settingId == 'preferences'
+        && isValidPreferences(incoming(), userId)
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && settingId == 'preferences'
+        && isValidPreferences(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'appTitle',
+          'appDescription',
+          'cashflowTitle',
+          'cashflowDescription',
+          'expenseDistTitle',
+          'expenseDistDescription',
+          'recentTitle',
+          'recentDescription',
+          'allTrxTitle',
+          'theme',
+          'updatedAt'
+        ]);
+      allow delete: if isOwner(userId) && isValidId(userId) && settingId == 'preferences';
+    }
+  }
+}
